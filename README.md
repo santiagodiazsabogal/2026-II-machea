@@ -3,6 +3,12 @@
 > Ruta Fundamentos del Semillero JaveBlockchain (Pontificia Universidad Javeriana).
 > Equipo Machea. Integrantes: Santiago Diaz Sabogal, Juan Diego Ortiz Guerrero y Carlos Andrés Figueroa Vega.
 
+## Probar la app
+
+**https://santiagodiazsabogal.github.io/2026-II-machea/**
+
+Corre en la **testnet** de Stellar (sin dinero real). Para probarla necesitas la extensión [Freighter](https://www.freighter.app/) en red **TEST NET**, XLM de prueba (se piden gratis en [Friendbot](https://friendbot.stellar.org/)) y aceptar el activo del proyecto antes de invertir. Cualquier persona puede invertir y pedir reembolso; cerrar la ronda, liberar fondos y repartir ganancias solo los puede hacer la wallet de la fiduciaria.
+
 ## Qué es este proyecto
 
 Inversión fraccionada en Stellar: una persona con montos pequeños no puede invertir en un proyecto inmobiliario porque tiene que confiar su dinero a un tercero; con la app, cualquiera compra fracciones del proyecto (un activo de Stellar), el dinero queda bloqueado en un contrato a la vista de todos, y solo se libera a la constructora si se completa la meta: si no, cada inversionista recupera lo suyo.
