@@ -43,7 +43,7 @@ export async function cargarBalances(address) {
 async function firmarYEnviar({ desde, operaciones, memo }) {
   const cuenta = await server.loadAccount(desde); // trae el número de secuencia
   const builder = new TransactionBuilder(cuenta, {
-    fee: String(Number(BASE_FEE) * operaciones.length), // 100 stroops por operación
+    fee: BASE_FEE, // tarifa máxima POR operación (100 stroops); la librería la multiplica por el número de operaciones
     networkPassphrase: NETWORK_PASSPHRASE,
   });
   operaciones.forEach((op) => builder.addOperation(op));
