@@ -19,7 +19,8 @@ import {
   mensajeDeError,
   horizon,
 } from "./fondeo.js";
-import { Marca, Edificio, Grafico, Billetera, Externo, Info, Pin, Calendario, Escudo, Derecha, Atras, Copiar, Check, Equis, Stellar, Documento, Cuadricula, Capas, Tendencia } from "./icons.jsx";
+import { Edificio, Grafico, Billetera, Externo, Info, Pin, Calendario, Escudo, Arriba, Copiar, Check, Equis, Stellar, Documento, Cuadricula, Capas, Tendencia } from "./icons.jsx";
+import { Logo, Cabecera, useConteo } from "./ui.jsx";
 import fotoProyecto from "./assets/proyecto.jpg";
 import Fiduciaria from "./Fiduciaria.jsx";
 import PortalFiduciaria from "./PortalFiduciaria.jsx";
@@ -98,11 +99,6 @@ export default function App() {
     const cada15s = setInterval(refrescar, 15000);
     return () => clearInterval(cada15s);
   }, [address]);
-
-  // El aviso sale al final de la tarjeta: si la pantalla es baja quedaba fuera de la vista y parecía que no pasaba nada.
-  useEffect(() => {
-    if (aviso) document.querySelector(".aviso")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [aviso]);
 
   function ir(v) {
     setVista(v);
@@ -184,14 +180,29 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="tarjeta">
-        <div className="top">
-          <div className="logo"><Marca alto={30} />Machea</div>
-          <div className="red"><Stellar size={19} /><span><b>Stellar</b></span><em><i />Testnet</em></div>
+      <header className="nav">
+        <div className="nav-in">
+          <button className="brand" onClick={() => ir("portafolio")} aria-label="Machea, ir a mi portafolio"><Logo /></button>
+          <div className="nav-act">
+            <span className="red"><Stellar size={18} /><b>Stellar</b><em><i />Testnet</em></span>
+            {wallet ? (
+              <a className="cuenta" href={`${EXPLORER}/account/${wallet}`} target="_blank" rel="noreferrer" title="Ver tu cuenta en stellar.expert"><i />{corto(wallet, 4)}</a>
+            ) : (
+              <button className="btn main chico" onClick={conectar} disabled={ocupado}><Billetera size={18} /><span>Conectar<span className="solo-pc"> wallet</span></span></button>
+            )}
+          </div>
         </div>
+      </header>
 
+      <nav className={`tabs ${pestanas.length > 4 ? "cinco" : ""}`} aria-label="Secciones">
+        {pestanas.map(([k, nombre, Icono]) => (
+          <button key={k} className={vista === k ? "on" : ""} aria-current={vista === k ? "page" : undefined} onClick={() => ir(k)}><Icono size={19} /><span>{nombre}</span></button>
+        ))}
+      </nav>
+
+      <main className="vista" key={vista}>
         {vista === "portafolio" && (
-          <Portafolio wallet={wallet} filas={filas} misFracciones={misFracciones} resumen={resumen} ganancias={muestra ? 50000000n : ganancias} conectar={conectar} irProyectos={() => ir("proyectos")} ocupado={ocupado} />
+          <Portafolio wallet={wallet} filas={filas} misFracciones={misFracciones} resumen={resumen} ganancias={muestra ? 50000000n : ganancias} conectar={conectar} ir={ir} ocupado={ocupado} />
         )}
 
         {vista === "invertir" && (
@@ -243,92 +254,124 @@ export default function App() {
             muestra={import.meta.env.DEV && inicial.estadoMuestra === "estados"}
           />
         )}
+      </main>
 
-        {aviso && (
-          <div className={`aviso ${aviso.tipo}`}>
+      <footer className="pie">
+        <span>Prototipo en la red de pruebas de Stellar. Proyectos y cifras ficticios; no es una oferta de inversión.</span>
+        <a href={`${EXPLORER}/contract/${CONTRACT_ID}`} target="_blank" rel="noreferrer">Ver el contrato en stellar.expert</a>
+      </footer>
+
+      {aviso && (
+        <div className={`aviso ${aviso.tipo}`} role={aviso.tipo === "error" ? "alert" : "status"}>
+          <span className="aviso-ico">{aviso.tipo === "ok" ? <Check size={16} /> : aviso.tipo === "error" ? <Equis size={14} /> : null}</span>
+          <div className="aviso-txt">
             {aviso.texto}
             {aviso.hash && (
               <>
                 {" "}<a href={`${EXPLORER}/tx/${aviso.hash}`} target="_blank" rel="noreferrer">Ver transacción</a>
-                <br /><code>{aviso.hash}</code>
+                <code>{aviso.hash}</code>
               </>
             )}
           </div>
-        )}
-      </div>
-
-      <div className={`nav ${pestanas.length > 4 ? "cinco" : ""}`}>
-        {pestanas.map(([k, nombre, Icono]) => (
-          <button key={k} className={vista === k ? "on" : ""} onClick={() => ir(k)}><Icono size={19} />{nombre}</button>
-        ))}
-      </div>
+          <button className="aviso-x" onClick={() => setAviso(null)} aria-label="Cerrar aviso"><Equis size={14} /></button>
+        </div>
+      )}
     </div>
   );
 }
 
-function Portafolio({ wallet, filas, misFracciones, resumen, ganancias, conectar, irProyectos, ocupado }) {
+function Portafolio({ wallet, filas, misFracciones, resumen, ganancias, conectar, ir, ocupado }) {
   const xlm = Number(filas.find((b) => b.codigo === "XLM")?.balance ?? 0);
+  const xlmAnimado = useConteo(xlm);
   const participacion = resumen && resumen.total ? (misFracciones / resumen.total) * 100 : 0;
   // Tus fracciones son una parte de la RONDA; la ronda financia una parte del proyecto. Mostramos las dos.
   const ficha = PROYECTO.modelo ? fichaFinanciera(PROYECTO) : null;
   const delProyecto = ficha && resumen ? (misFracciones / resumen.total) * ficha.participacionRonda * 100 : null;
   const baseDelProyecto = ficha?.modelo === "renta" ? "del edificio" : "del costo del proyecto";
+  const avance = resumen && resumen.total ? (resumen.vendidas / resumen.total) * 100 : 0;
+  const abierta = resumen?.estado === "Recaudando";
   return (
     <>
-      <h1>Mi portafolio</h1>
-      <p className="sub">Tu cartera en Stellar y tus fracciones de proyectos inmobiliarios</p>
+      <Cabecera etiqueta="Tu cartera" titulo="Mi portafolio" texto="Tu balance en Stellar y tus fracciones de proyectos inmobiliarios, en un solo lugar." />
 
-      <div className="hero">
-        <div className="hero-id">
-          <span className="tile"><Stellar size={34} /></span>
+      <div className="bento">
+        <section className="saldo" aria-label="Balance en Stellar">
+          <div className="saldo-top">
+            <span className="saldo-et"><Stellar size={20} />Balance en Stellar</span>
+            <span className={`saldo-chip ${wallet ? "on" : ""}`}><i />{wallet ? corto(wallet, 4) : "Sin conectar"}</span>
+          </div>
           <div>
-            <small>Balance en Stellar</small>
-            <div className="monto">{num2(xlm)}<span>XLM</span></div>
+            <div className="monto">{num2(xlmAnimado)}<span>XLM</span></div>
             <div className="cop">≈ ${formatCop(xlm)} COP <em>(ejemplo)</em></div>
           </div>
-        </div>
-        <div className="hero-acciones">
-          {!wallet ? (
-            <button className="hbtn" onClick={conectar} disabled={ocupado}><Billetera size={22} />Conectar wallet</button>
-          ) : (
-            <button className="hbtn" onClick={irProyectos}><Edificio size={22} />Ver todos los proyectos</button>
-          )}
-          <a className="hlink" href={wallet ? `${EXPLORER}/account/${wallet}` : `${EXPLORER}/asset/${ACTIVO.codigo}-${ACTIVO.emisor}`} target="_blank" rel="noreferrer">
-            <Externo size={18} />Ver en stellar.expert
-          </a>
-        </div>
+          <div className="saldo-acciones">
+            {!wallet ? (
+              <button className="hbtn" onClick={conectar} disabled={ocupado}><Billetera size={22} />Conectar wallet</button>
+            ) : (
+              <button className="hbtn" onClick={() => ir("proyectos")}><Edificio size={22} />Ver todos los proyectos</button>
+            )}
+            <a className="hlink" href={wallet ? `${EXPLORER}/account/${wallet}` : `${EXPLORER}/asset/${ACTIVO.codigo}-${ACTIVO.emisor}`} target="_blank" rel="noreferrer">
+              <Externo size={18} />Ver en stellar.expert
+            </a>
+          </div>
+        </section>
+
+        <article className="destacado">
+          <div className="destacado-foto">
+            <img src={PROYECTO.imagen || fotoProyecto} alt={`Imagen ilustrativa de ${PROYECTO.nombre}`} />
+            <span className="proy-tag">Ronda de fondeo</span>
+            <EtiquetaVis proyecto={PROYECTO} />
+          </div>
+          <div className="destacado-cuerpo">
+            <h2>{PROYECTO.nombre}</h2>
+            <p className="zona"><Pin size={16} />{PROYECTO.zona}</p>
+            <div className="proy-avance">
+              <div className="barra"><i style={{ width: `${avance}%` }} /></div>
+              <span>{resumen ? `${resumen.vendidas} de ${resumen.total} fracciones · ${pct(avance)} %` : "Leyendo la ronda en la red…"}</span>
+            </div>
+            <button className="btn" onClick={() => ir(abierta || !resumen ? "invertir" : "seguimiento")}>
+              {abierta || !resumen ? "Invertir en este proyecto" : "Ver el seguimiento"}<span className="ir"><Arriba size={16} /></span>
+            </button>
+          </div>
+        </article>
       </div>
 
       <div className="rejilla">
-        <div className="fila">
-          <span className="ico rosa"><Edificio size={30} /></span>
-          <span className="txt">Fracciones {ACTIVO.codigo}</span>
-          <span className="valor">{misFracciones.toLocaleString("es-CO")}</span>
-          <span className="flecha"><Derecha size={20} /></span>
-        </div>
-
-        <div className="fila part">
-          <span className="ico azul"><Grafico size={30} /></span>
+        <button className="fila" onClick={() => ir("invertir")}>
+          <span className="ico rosa"><Edificio size={26} /></span>
           <span className="txt">
-            Mi participación
+            <small>Fracciones {ACTIVO.codigo}</small>
+            <b>{misFracciones.toLocaleString("es-CO")}</b>
+            <em>un activo de Stellar en tu wallet</em>
+          </span>
+          <span className="flecha"><Arriba size={16} /></span>
+        </button>
+
+        <button className="fila part" onClick={() => ir("seguimiento")}>
+          <span className="anillo" style={{ "--p": participacion > 0 ? Math.max(participacion, 3) : 0 }}><Grafico size={20} /></span>
+          <span className="txt">
+            <small>Mi participación</small>
             <b>{pct(participacion)} %</b>
-            <small>
+            <em>
               de la ronda de {PROYECTO.nombre}
               {delProyecto !== null && ` · ${delProyecto.toLocaleString("es-CO", { maximumFractionDigits: 3 })} % ${baseDelProyecto}`}
-            </small>
+            </em>
           </span>
-          <span className="flecha"><Derecha size={20} /></span>
-        </div>
+          <span className="flecha"><Arriba size={16} /></span>
+        </button>
 
         <div className="fila">
-          <span className="ico verde"><Stellar size={28} /></span>
-          <span className="txt">Ganancias recibidas<small>repartidas por la fiduciaria</small></span>
-          <span className="valor">{formatXlm(ganancias)} XLM</span>
+          <span className="ico verde"><Stellar size={26} /></span>
+          <span className="txt">
+            <small>Ganancias recibidas</small>
+            <b>{formatXlm(ganancias)}<span>XLM</span></b>
+            <em>repartidas por la fiduciaria</em>
+          </span>
         </div>
       </div>
 
       <div className="caja verde">
-        <Info size={26} />
+        <Info size={24} />
         <div><b>¿Qué es esto?</b>Administra tu balance en XLM, tus fracciones (un activo de Stellar) y tu participación en la ronda del proyecto.</div>
       </div>
     </>
@@ -343,89 +386,86 @@ function Invertir({ wallet, resumen, cantidad, setFracciones, misFracciones, tie
   const nuevaParticipacion = resumen && resumen.total ? ((misFracciones + cantidad) / resumen.total) * 100 : 0;
 
   let boton;
-  if (!wallet) boton = <button className="btn main" onClick={conectar} disabled={ocupado}><Billetera size={24} />Conectar wallet para invertir</button>;
+  if (!wallet) boton = <button className="btn main" onClick={conectar} disabled={ocupado}><Billetera size={22} />Conectar wallet para invertir</button>;
   else if (!resumen) boton = <button className="btn" disabled>Cargando la ronda…</button>;
   else if (!abierta) boton = <button className="btn" disabled>La ronda ya no recibe inversiones</button>;
-  else if (!tieneTrustline) boton = <button className="btn main" onClick={aceptarActivo} disabled={ocupado}><Billetera size={24} />1. Aceptar el activo {ACTIVO.codigo}</button>;
-  else boton = <button className="btn main" onClick={invertir} disabled={ocupado}><Billetera size={24} />Invertir con Freighter</button>;
+  else if (!tieneTrustline) boton = <button className="btn main" onClick={aceptarActivo} disabled={ocupado}><Billetera size={22} />1. Aceptar el activo {ACTIVO.codigo}</button>;
+  else boton = <button className="btn main" onClick={invertir} disabled={ocupado}><Billetera size={22} />Invertir con Freighter</button>;
 
   return (
     <>
-      <div className="titulo">
-        <button className="atras" onClick={atras} aria-label="Volver"><Atras size={20} /></button>
-        <h1>Invertir en un proyecto</h1>
-      </div>
-      <p className="sub">Compra fracciones del proyecto con un pago seguro en Stellar.</p>
+      <Cabecera etiqueta="Ronda de fondeo" titulo="Invertir en un proyecto" texto="Compra fracciones del proyecto con un pago seguro en Stellar." atras={atras} />
 
       <div className="dos-col">
-      <div className="col">
-      <div className="proyecto">
-        <img src={PROYECTO.imagen || fotoProyecto} alt={`Imagen ilustrativa de ${PROYECTO.nombre}`} />
-        <div className="dato">
-          <small>Proyecto</small>
-          <h2>{PROYECTO.nombre}</h2>
-          <div className="zona"><Pin size={17} />{PROYECTO.zona}</div>
-          <span className="unidad"><select disabled aria-label="Ronda"><option>Ronda de fondeo</option></select></span>
-          <EtiquetaVis proyecto={PROYECTO} />
+        <div className="col">
+          <div className="proyecto">
+            <img src={PROYECTO.imagen || fotoProyecto} alt={`Imagen ilustrativa de ${PROYECTO.nombre}`} />
+            <div className="dato">
+              <small>Proyecto</small>
+              <h2>{PROYECTO.nombre}</h2>
+              <div className="zona"><Pin size={16} />{PROYECTO.zona}</div>
+              <div className="etiquetas">
+                <span className="unidad">Ronda de fondeo</span>
+                <EtiquetaVis proyecto={PROYECTO} />
+              </div>
+            </div>
+          </div>
+
+          {resumen && (
+            <div className="resumen">
+              <h3>La ronda</h3>
+              <div className="dato-fila">
+                <span className="ico"><Escudo size={20} /></span>
+                <span className="et">Meta</span>
+                <span className="val"><b>{num2(precioXlm * resumen.total)} XLM</b><small>≈ ${formatCop(precioXlm * resumen.total)} COP</small></span>
+              </div>
+              <div className="avance">
+                <div className="barra"><i style={{ width: `${avance}%` }} /></div>
+                <span>{resumen.vendidas} de {resumen.total} fracciones · {pct(avance)} %</span>
+              </div>
+              <div className="dato-fila">
+                <span className="ico"><Calendario size={20} /></span>
+                <span className="et">Plazo</span>
+                <span className="val">Hasta {fechaCorta(resumen.fechaLimite)}</span>
+              </div>
+              <div className="dato-fila">
+                <span className="ico"><Edificio size={20} /></span>
+                <span className="et">Precio por fracción</span>
+                <span className="val"><b>{num2(precioXlm)} XLM</b><small>≈ ${formatCop(precioXlm)} COP</small></span>
+              </div>
+            </div>
+          )}
+
+          <FichaProyecto proyecto={PROYECTO} />
         </div>
-        <span className="flecha"><Derecha size={20} /></span>
-      </div>
 
-      {resumen && (
-        <div className="resumen">
-          <h3>La ronda</h3>
-          <div className="dato-fila">
-            <span className="ico"><Escudo size={24} /></span>
-            <span className="et">Meta</span>
-            <span className="val"><b>{num2(precioXlm * resumen.total)} XLM</b><small>≈ ${formatCop(precioXlm * resumen.total)} COP</small></span>
-          </div>
-          <div className="avance">
-            <div className="barra"><i style={{ width: `${avance}%` }} /></div>
-            <span>{resumen.vendidas} de {resumen.total} fracciones · {pct(avance)} %</span>
-          </div>
-          <div className="dato-fila">
-            <span className="ico"><Calendario size={24} /></span>
-            <span className="et">Plazo</span>
-            <span className="val">Hasta {fechaCorta(resumen.fechaLimite)}</span>
-          </div>
-          <div className="dato-fila">
-            <span className="ico"><Edificio size={24} /></span>
-            <span className="et">Precio por fracción</span>
-            <span className="val"><b>{num2(precioXlm)} XLM</b><small>≈ ${formatCop(precioXlm)} COP</small></span>
-          </div>
-        </div>
-      )}
+        <div className="col compra pegada">
+          {abierta && (
+            <div className="comprar">
+              <label htmlFor="frac"><span className="tile rosa"><Stellar size={22} /></span>Fracciones a comprar</label>
+              <div className="stepper">
+                <button onClick={() => setFracciones(Math.max(1, cantidad - 1))} aria-label="Menos">−</button>
+                <input id="frac" inputMode="numeric" value={cantidad} onChange={(e) => setFracciones(e.target.value.replace(/\D/g, ""))} />
+                <button onClick={() => setFracciones(cantidad + 1)} aria-label="Más">+</button>
+              </div>
+            </div>
+          )}
 
-      <FichaProyecto proyecto={PROYECTO} />
+          {abierta && (
+            <div className="totales">
+              <div className="dato-fila"><span className="et">Total a pagar</span><span className="val"><b>{num2(total)} XLM</b></span></div>
+              <div className="dato-fila"><span className="et">Tu participación en la ronda</span><span className="val"><b>{pct(nuevaParticipacion)} %</b></span></div>
+              <Proyeccion proyecto={PROYECTO} fracciones={cantidad} />
+            </div>
+          )}
 
-      </div>
-      <div className="col compra">
-      {abierta && (
-        <div className="comprar">
-          <label htmlFor="frac"><span className="tile rosa"><Stellar size={24} /></span>Fracciones a comprar</label>
-          <div className="stepper">
-            <button onClick={() => setFracciones(Math.max(1, cantidad - 1))} aria-label="Menos">−</button>
-            <input id="frac" inputMode="numeric" value={cantidad} onChange={(e) => setFracciones(e.target.value.replace(/\D/g, ""))} />
-            <button onClick={() => setFracciones(cantidad + 1)} aria-label="Más">+</button>
+          {boton}
+
+          <div className="caja verde">
+            <Info size={24} />
+            <div><b>¿Qué sucede con mi dinero?</b>Tu dinero queda bloqueado en un contrato en Stellar. Si no se completa la meta, lo recuperas tú mismo.</div>
           </div>
         </div>
-        )}
-
-        {abierta && (
-        <div className="totales">
-          <div className="dato-fila"><span className="et">Total a pagar</span><span className="val"><b>{num2(total)} XLM</b></span></div>
-          <div className="dato-fila"><span className="et">Tu participación en la ronda</span><span className="val"><b>{pct(nuevaParticipacion)} %</b></span></div>
-          <Proyeccion proyecto={PROYECTO} fracciones={cantidad} />
-        </div>
-      )}
-
-      {boton}
-
-      <div className="caja verde">
-        <Info size={26} />
-        <div><b>¿Qué sucede con mi dinero?</b>Tu dinero queda bloqueado en un contrato en Stellar. Si no se completa la meta, lo recuperas tú mismo.</div>
-      </div>
-      </div>
       </div>
     </>
   );
@@ -433,7 +473,7 @@ function Invertir({ wallet, resumen, cantidad, setFracciones, misFracciones, tie
 
 function Seguimiento({ resumen, config, wallet, misFracciones, ocupado, conectar, cerrarAntes, liberar, reembolsar, calcularReparto, enviarReparto, sugerido }) {
   const [copiado, setCopiado] = useState(false);
-  if (!resumen) return (<><h1>Seguimiento del proyecto</h1><p className="sub">Leyendo la ronda en la red…</p></>);
+  if (!resumen) return <Cabecera etiqueta="En la red" titulo="Seguimiento del proyecto" texto="Leyendo la ronda en la red…" />;
 
   const { estado } = resumen;
   const exito = estado === "Exitosa" || estado === "Liberada";
@@ -452,73 +492,75 @@ function Seguimiento({ resumen, config, wallet, misFracciones, ocupado, conectar
 
   return (
     <>
-      <h1>Seguimiento del proyecto</h1>
-      <p className="sub">Consulta el estado y la trazabilidad en la red.</p>
+      <Cabecera etiqueta="En la red" titulo="Seguimiento del proyecto" texto="Consulta el estado y la trazabilidad en la red." />
 
       <div className="dos-col">
-      <div className="col">
-      <div className="linea">
-        <span className={`estado ${exito ? "ok" : ""}`}>{etiqueta}</span>
-        <ul className="pasos">
-          <Paso estado="hecho" titulo="Ronda abierta" detalle={`Plazo hasta ${fechaCorta(resumen.fechaLimite)}`} fecha />
-          <Paso
-            estado={estado === "Recaudando" ? "activo" : exito ? "hecho" : "no"}
-            titulo="Recaudando fondos"
-            detalle={`${resumen.vendidas} de ${resumen.total} fracciones vendidas`}
-          />
-          <Paso
-            estado={exito ? "hecho" : estado === "Fallida" ? "no" : "pendiente"}
-            titulo={cerradaAntes ? "Ronda cerrada" : "Meta alcanzada"}
-            detalle={cerradaAntes ? "La fiduciaria la cerró antes de tiempo, con lo recaudado" : exito ? "Se vendieron todas las fracciones" : estado === "Fallida" ? "No se alcanzó la meta a tiempo" : "Faltan fracciones por vender"}
-          />
-          <Paso
-            estado={estado === "Liberada" ? "hecho" : estado === "Fallida" ? "no" : "pendiente"}
-            titulo="Fondos a la constructora"
-            detalle={estado === "Liberada" ? "La fiduciaria los liberó" : estado === "Fallida" ? "Cada inversionista recupera su dinero" : "La fiduciaria los libera al alcanzar la meta"}
-          />
-        </ul>
-        <div className="avance sola">
-          <div className="barra"><i style={{ width: `${avance}%` }} /></div>
-          <span>{pct(avance)} % de la meta</span>
+        <div className="col">
+          <div className="linea">
+            <div className="linea-cab">
+              <h3>{PROYECTO.nombre}</h3>
+              <span className={`estado ${exito ? "ok" : ""}`}>{etiqueta}</span>
+            </div>
+            <ul className="pasos">
+              <Paso estado="hecho" titulo="Ronda abierta" detalle={`Plazo hasta ${fechaCorta(resumen.fechaLimite)}`} fecha />
+              <Paso
+                estado={estado === "Recaudando" ? "activo" : exito ? "hecho" : "no"}
+                titulo="Recaudando fondos"
+                detalle={`${resumen.vendidas} de ${resumen.total} fracciones vendidas`}
+              />
+              <Paso
+                estado={exito ? "hecho" : estado === "Fallida" ? "no" : "pendiente"}
+                titulo={cerradaAntes ? "Ronda cerrada" : "Meta alcanzada"}
+                detalle={cerradaAntes ? "La fiduciaria la cerró antes de tiempo, con lo recaudado" : exito ? "Se vendieron todas las fracciones" : estado === "Fallida" ? "No se alcanzó la meta a tiempo" : "Faltan fracciones por vender"}
+              />
+              <Paso
+                estado={estado === "Liberada" ? "hecho" : estado === "Fallida" ? "no" : "pendiente"}
+                titulo="Fondos a la constructora"
+                detalle={estado === "Liberada" ? "La fiduciaria los liberó" : estado === "Fallida" ? "Cada inversionista recupera su dinero" : "La fiduciaria los libera al alcanzar la meta"}
+              />
+            </ul>
+            <div className="avance sola">
+              <div className="barra"><i style={{ width: `${avance}%` }} /></div>
+              <span>{pct(avance)} % de la meta</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      </div>
-      <div className="col">
-      <div className="tira">
-        <div><span className="tile azul"><Stellar size={26} /></span><span className="dato"><small>Recaudado</small><b>{formatXlm(resumen.recaudado)} XLM</b></span></div>
-        <div>
-          <span className="tile rosa"><Documento size={26} /></span>
-          <span className="dato">
-            <small>Contrato</small>
-            <span className="c">{corto(CONTRACT_ID, 4)}<button onClick={copiar} aria-label="Copiar contrato">{copiado ? <Check size={18} /> : <Copiar size={18} />}</button></span>
-          </span>
+        <div className="col">
+          <div className="tira">
+            <div><span className="tile azul"><Stellar size={24} /></span><span className="dato"><small>Recaudado</small><b>{formatXlm(resumen.recaudado)} XLM</b></span></div>
+            <div>
+              <span className="tile rosa"><Documento size={24} /></span>
+              <span className="dato">
+                <small>Contrato</small>
+                <span className="c">{corto(CONTRACT_ID, 4)}<button onClick={copiar} aria-label="Copiar contrato">{copiado ? <Check size={16} /> : <Copiar size={16} />}</button></span>
+              </span>
+            </div>
+            <div>
+              <span className="tile verde"><Externo size={22} /></span>
+              <span className="dato">
+                <small>Ver en Stellar</small>
+                <span className="c"><a href={`${EXPLORER}/contract/${CONTRACT_ID}`} target="_blank" rel="noreferrer">stellar.expert</a></span>
+              </span>
+            </div>
+          </div>
+
+          <div className="que">
+            <h3><Escudo size={26} />¿Qué puede pasar?</h3>
+            <p><b>Se llega a la meta:</b> la fiduciaria libera el dinero a la constructora y tus fracciones son tu participación en el proyecto.</p>
+            <p className="malo"><b>No se llega a la meta:</b> devuelves tus fracciones y recuperas tu dinero, sin pedirle permiso a nadie.</p>
+          </div>
+
+          {!wallet && <button className="btn" onClick={conectar} disabled={ocupado}><Billetera size={22} />Conectar wallet para actuar</button>}
+
+          {estado === "Fallida" && misFracciones > 0 && (
+            <button className="btn warn" onClick={reembolsar} disabled={ocupado}>Recuperar mi dinero ({misFracciones} fracciones)</button>
+          )}
+
+          {esFiduciaria && (
+            <Fiduciaria estado={estado} vendidas={resumen.vendidas} total={resumen.total} ocupado={ocupado} cerrarAntes={cerrarAntes} liberar={liberar} calcularReparto={calcularReparto} enviarReparto={enviarReparto} sugerido={sugerido} control={sugerido && config ? { fiduciaria: config.fiduciaria, codigo: ACTIVO.codigo, unaVez: PROYECTO.modelo === "venta" } : null} />
+          )}
         </div>
-        <div>
-          <span className="tile azul"><Stellar size={26} /></span>
-          <span className="dato">
-            <small>Ver en Stellar</small>
-            <span className="c"><a href={`${EXPLORER}/contract/${CONTRACT_ID}`} target="_blank" rel="noreferrer">stellar.expert<Externo size={17} /></a></span>
-          </span>
-        </div>
-      </div>
-
-      <div className="que">
-        <h3><Escudo size={28} />¿Qué puede pasar?</h3>
-        <p><b>Se llega a la meta:</b> la fiduciaria libera el dinero a la constructora y tus fracciones son tu participación en el proyecto.</p>
-        <p className="malo"><b>No se llega a la meta:</b> devuelves tus fracciones y recuperas tu dinero, sin pedirle permiso a nadie.</p>
-      </div>
-
-      {!wallet && <button className="btn" onClick={conectar} disabled={ocupado}><Billetera size={22} />Conectar wallet para actuar</button>}
-
-      {estado === "Fallida" && misFracciones > 0 && (
-        <button className="btn warn" onClick={reembolsar} disabled={ocupado}>Recuperar mi dinero ({misFracciones} fracciones)</button>
-      )}
-
-      {esFiduciaria && (
-        <Fiduciaria estado={estado} vendidas={resumen.vendidas} total={resumen.total} ocupado={ocupado} cerrarAntes={cerrarAntes} liberar={liberar} calcularReparto={calcularReparto} enviarReparto={enviarReparto} sugerido={sugerido} control={sugerido && config ? { fiduciaria: config.fiduciaria, codigo: ACTIVO.codigo, unaVez: PROYECTO.modelo === "venta" } : null} />
-      )}
-      </div>
       </div>
     </>
   );

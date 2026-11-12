@@ -6,6 +6,7 @@ import { enviarReparto, planDeReparto } from "./reparto.js";
 import { TASA_COP_POR_XLM, fichaFinanciera, montoSugeridoReparto, pesos } from "./finanzas.js";
 import Fiduciaria from "./Fiduciaria.jsx";
 import { Billetera } from "./icons.jsx";
+import { Cabecera } from "./ui.jsx";
 
 const ETIQUETA = { Recaudando: "Recaudando", Exitosa: "Meta alcanzada", Liberada: "Completada", Fallida: "No se completó" };
 const CLASE = { Recaudando: "recaudando", Exitosa: "meta", Liberada: "ok", Fallida: "fallo" };
@@ -96,18 +97,17 @@ export default function PortalFiduciaria({ address, conectar, ocupado, setOcupad
 
   return (
     <>
-      <h1>Portal de la fiduciaria</h1>
-      <p className="sub">Las rondas que administras, en un solo lugar. Cada acción se firma con tu Freighter.</p>
+      <Cabecera etiqueta="Fiduciaria" titulo="Portal de la fiduciaria" texto="Las rondas que administras, en un solo lugar. Cada acción se firma con tu Freighter." />
 
       {!quien && (
-        <div className="aviso info portal-aviso">
+        <div className="portal-aviso">
           <b>Conecta la wallet de la fiduciaria</b> para ver y gestionar sus rondas. Con cualquier otra wallet verás las rondas, pero no podrás actuar sobre ellas.
           <button className="btn main" onClick={conectar} disabled={ocupado}><Billetera size={22} />Conectar wallet</button>
         </div>
       )}
 
       {quien && mias === 0 && Object.keys(rondas).length > 0 && (
-        <div className="aviso info portal-aviso">
+        <div className="portal-aviso">
           La wallet conectada ({corto(quien)}) no es la fiduciaria de estas rondas. Cámbiate en Freighter a la cuenta de la fiduciaria
           ({corto(fiduciariaDeLasRondas)}) y recarga.
         </div>

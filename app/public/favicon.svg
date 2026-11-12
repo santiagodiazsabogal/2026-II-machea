@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#fff"/><g transform="translate(8 14) scale(0.9)" fill="none" stroke="#FF6259" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 36V19L22 5l8 7"/><path d="M40 36v-6"/><path d="M14 26l7 7L45 9"/><path d="M34 8h11v11"/></g></svg>
+<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+  <rect width="40" height="40" rx="9" fill="#2D3B4E"/>
+  <!-- Isotipo Machea (casa con check y flecha), mismo dibujo que #logo-mark en index.html -->
+  <g transform="translate(4.85 9.9) scale(0.6) translate(-3 -3)">
+    <g fill="none" stroke="#FF6259" stroke-width="6" stroke-linejoin="miter" stroke-miterlimit="10">
+      <path d="M6 25.6 24.4 7.2 33.6 16.4"/>
+      <path d="M12 19.6V36.7"/>
+      <path d="M20.5 23.3 26.7 29.5 47.6 11.6"/>
+    </g>
+    <path fill="#FF6259" d="M41.25 7.9 53.3 6 51 18.75Z M40 25 45.8 20.9V36.7H40Z"/>
+  </g>
+</svg>

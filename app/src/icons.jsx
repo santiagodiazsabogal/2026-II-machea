@@ -11,6 +11,7 @@ export const Pin = (p) => <I {...p}><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 
 export const Calendario = (p) => <I {...p}><rect x="4" y="5.5" width="16" height="14.5" rx="2" /><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" /></I>;
 export const Escudo = (p) => <I {...p}><path d="M12 3 5 6v5c0 4.6 2.9 8.2 7 10 4.1-1.8 7-5.4 7-10V6l-7-3Z" /><path d="m9 12 2.2 2.2L15.5 10" /></I>;
 export const Derecha = (p) => <I {...p}><path d="m9 6 6 6-6 6" /></I>;
+export const Arriba = (p) => <I {...p} strokeWidth={2}><path d="M7 17 17 7M8 7h9v9" /></I>;
 export const Atras = (p) => <I {...p}><path d="M19 12H5M11 6l-6 6 6 6" /></I>;
 export const Copiar = (p) => <I {...p}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h8" /></I>;
 export const Check = (p) => <I {...p} strokeWidth={2.6}><path d="m5 12.5 4.5 4.5L19 7.5" /></I>;
@@ -29,15 +30,3 @@ export const Stellar = ({ size = 22, ...p }) => (
     <path d="M3.5 10.5 20.5 5.5M3.5 18.5 20.5 13.5" />
   </svg>
 );
-
-// Marca de Machea en línea: casa, visto bueno y flecha de crecimiento (como en el diseño de las pantallas).
-export function Marca({ alto = 28 }) {
-  return (
-    <svg width={alto * 1.3} height={alto} viewBox="0 0 52 40" fill="none" stroke="#FF6259" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 36V19L22 5l8 7" />
-      <path d="M40 36v-6" />
-      <path d="M14 26l7 7L45 9" />
-      <path d="M34 8h11v11" />
-    </svg>
-  );
-}

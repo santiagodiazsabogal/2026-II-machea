@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { PROYECTOS } from "./proyectos.js";
 import { CONTRACT_ID, enlaceRonda, leerRonda } from "./fondeo.js";
-import { Calendario, Derecha, Pin } from "./icons.jsx";
+import { Arriba, Calendario, Pin } from "./icons.jsx";
+import { Cabecera } from "./ui.jsx";
 import { EtiquetaVis } from "./Ficha.jsx";
 import { fichaFinanciera, millones, pesos, porcentaje, TASA_COP_POR_XLM } from "./finanzas.js";
 
@@ -41,8 +42,7 @@ export default function Proyectos({ irInvertir }) {
 
   return (
     <>
-      <h1>Proyectos</h1>
-      <p className="sub">Elige un proyecto y compra fracciones con una ronda de fondeo en Stellar.</p>
+      <Cabecera etiqueta="Catálogo" titulo="Proyectos" texto="Elige un proyecto y compra fracciones con una ronda de fondeo en Stellar." />
 
       <div className="catalogo">
         {PROYECTOS.map((p) => {
@@ -89,8 +89,8 @@ export default function Proyectos({ irInvertir }) {
                   </span>
                 </div>
 
-                <button className="btn main" onClick={() => elegir(p)}>
-                  {activa ? "Ver y invertir" : "Elegir este proyecto"}<Derecha size={18} />
+                <button className={`btn ${activa ? "main" : ""}`} onClick={() => elegir(p)}>
+                  {activa ? "Ver e invertir" : "Elegir este proyecto"}<span className="ir"><Arriba size={16} /></span>
                 </button>
               </div>
             </article>
