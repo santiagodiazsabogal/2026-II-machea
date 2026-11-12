@@ -7,7 +7,7 @@ const corto = (g) => `${g.slice(0, 6)}…${g.slice(-6)}`;
 
 /**
  * Panel de la fiduciaria: solo aparece cuando la wallet conectada es la fiduciaria de la ronda.
- * Liberar los fondos y repartir ganancias se firman con Freighter, como cualquier otra operación.
+ * Liberar los fondos y repartir ganancias se firman con Varial, como cualquier otra operación.
  * Todas las acciones piden confirmación porque no se pueden deshacer.
  * Con la ronda abierta y al menos una inversión, la fiduciaria puede cerrarla antes de tiempo (cierre anticipado).
  *
@@ -54,7 +54,7 @@ export default function Fiduciaria({ estado, vendidas, total, ocupado, cerrarAnt
       {titulo && (
         <>
           <h3>Panel de la fiduciaria</h3>
-          <small>Solo la fiduciaria de esta ronda ve esto. Cada acción se firma con tu Freighter.</small>
+          <small>Solo la fiduciaria de esta ronda ve esto. Cada acción se firma con tu Varial.</small>
         </>
       )}
 

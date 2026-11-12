@@ -93,7 +93,7 @@ export function fechaCorta(segundos) {
   return `${f.getDate()} ${mes} ${f.getFullYear()} · ${hora}`;
 }
 
-/** Traduce cualquier error (del contrato, de Freighter o de la red) a un mensaje legible. */
+/** Traduce cualquier error (del contrato, de Varial o de la red) a un mensaje legible. */
 export function mensajeDeError(e) {
   const m = String(e?.message ?? e);
   const c = m.match(/Error\(Contract, #(\d+)\)/);

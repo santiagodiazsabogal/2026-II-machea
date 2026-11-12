@@ -3,24 +3,24 @@
 > Ruta Fundamentos del Semillero JaveBlockchain (Pontificia Universidad Javeriana).
 > Equipo Machea. Integrantes: Santiago Diaz Sabogal, Juan Diego Ortiz Guerrero y Carlos Andrés Figueroa Vega.
 
-## Probar la app
+## Probar la app en línea
 
 **https://santiagodiazsabogal.github.io/2026-II-machea/**
 
-Corre en la **testnet** de Stellar (sin dinero real). Para probarla necesitas la extensión [Freighter](https://www.freighter.app/) en red **TEST NET**, XLM de prueba (se piden gratis en [Friendbot](https://friendbot.stellar.org/)) y aceptar el activo del proyecto antes de invertir. Cualquier persona puede invertir y pedir reembolso; cerrar la ronda, liberar fondos y repartir ganancias solo los puede hacer la wallet de la fiduciaria.
+Corre en la **testnet** de Stellar (sin dinero real). Para probarla necesitas la extensión [Varial (antes Freighter)](https://www.freighter.app/) en red **TEST NET**, XLM de prueba (se piden gratis en [Friendbot](https://friendbot.stellar.org/)) y aceptar el activo del proyecto antes de invertir. Cualquier persona puede invertir y pedir reembolso; cerrar la ronda, liberar fondos y repartir ganancias solo los puede hacer la wallet de la fiduciaria.
 
 ## Qué es este proyecto
 
-Inversión fraccionada en Stellar: una persona con montos pequeños no puede invertir en un proyecto inmobiliario porque tiene que confiar su dinero a un tercero; con la app, cualquiera compra fracciones del proyecto (un activo de Stellar), el dinero queda bloqueado en un contrato a la vista de todos, y solo se libera a la constructora si se completa la meta: si no, cada inversionista recupera lo suyo.
+Inversión fraccionada en Stellar: una persona con montos pequeños no puede invertir en un proyecto inmobiliario porque tiene que confiar su dinero a un tercero; con la app, cualquiera compra fracciones del proyecto (un activo de Stellar), el dinero queda bloqueado en un contrato a la vista de todos, y se libera a la constructora si se completa la meta o si la fiduciaria cierra la ronda antes del plazo; si vence el plazo sin ninguna de las dos, cada inversionista recupera lo suyo.
 
 ## Cómo funciona
 
 1. Una **ronda de fondeo** tiene una meta (un número de fracciones), un precio por fracción y un plazo.
-2. **Cualquiera invierte:** acepta el activo en su wallet (trustline) y compra fracciones. El contrato recibe el dinero y le entrega las fracciones, un activo de Stellar que ve en Freighter.
-3. **Si se venden todas las fracciones,** la fiduciaria libera el dinero a la constructora. **Si pasa el plazo sin completarse,** la ronda falla sola y cada tenedor devuelve sus fracciones y recupera su dinero.
+2. **Cualquiera invierte:** acepta el activo en su wallet (trustline) y compra fracciones. El contrato recibe el dinero y le entrega las fracciones, un activo de Stellar que ve en su wallet, Varial (se llamaba Freighter hasta octubre de 2026).
+3. **Si se venden todas las fracciones,** la fiduciaria libera el dinero a la constructora. La fiduciaria también puede **cerrar la ronda antes del plazo** con lo recaudado hasta ese momento: en ese caso se libera y ya no hay reembolso. **Si pasa el plazo sin completarse,** la ronda falla sola y cada tenedor devuelve sus fracciones y recupera su dinero.
 4. **Ganancias:** la fiduciaria reparte un monto (por ejemplo, el arriendo) entre los tenedores, según su porcentaje de fracciones.
 
-| Pantalla | Operación de Stellar | ¿Firma Freighter? |
+| Pantalla | Operación de Stellar | ¿Firma Varial? |
 |---|---|---|
 | 0 · Proyectos | Lectura `resumen` de la ronda de cada proyecto del catálogo (avance en vivo) y su retorno estimado | No |
 | 1 · Mi portafolio | Lectura de la cuenta en Horizon: balance de XLM, fracciones y ganancias recibidas | No |
@@ -33,13 +33,29 @@ Inversión fraccionada en Stellar: una persona con montos pequeños no puede inv
 | Pieza | Qué es | Estado |
 |---|---|---|
 | **Contrato de fondeo** (`contracts/fondeo/`) | La ronda: invertir, cerrar antes de tiempo, liberar, reembolsar. El contrato emite y destruye las fracciones | 31 pruebas automáticas; probado en testnet (rondas de éxito y de fracaso) |
-| **App** (`app/`) | Las pantallas (Proyectos, Mi portafolio, Invertir y Seguimiento) y el portal de la fiduciaria, conectadas al contrato | Funciona; falta el ensayo con Freighter en el navegador |
-| **Portal y panel de la fiduciaria** | Cerrar la ronda antes de tiempo, liberar fondos y repartir ganancias, firmados con la wallet de la fiduciaria (Freighter) y con confirmación; el monto del reparto es el pactado por el modelo | Reparto probado en testnet y pantalla probada en el navegador; falta el ensayo con la wallet de la fiduciaria en Freighter |
+| **App** (`app/`) | Las pantallas (Proyectos, Mi portafolio, Invertir y Seguimiento) y el portal de la fiduciaria, conectadas al contrato | Funciona; falta el ensayo con Varial en el navegador |
+| **Portal y panel de la fiduciaria** | Cerrar la ronda antes de tiempo, liberar fondos y repartir ganancias, firmados con la wallet de la fiduciaria (Varial) y con confirmación; el monto del reparto es el pactado por el modelo | Reparto probado en testnet y pantalla probada en el navegador; falta el ensayo con la wallet de la fiduciaria en Varial |
 | **Guía de la demo** (`demo/`) | Cómo mostrar el ciclo completo y el script `ronda.sh`, que crea rondas de prueba (por ejemplo, la del reembolso) | Probado en testnet. Ver [`demo/README.md`](demo/README.md) |
 
 El **CI de GitHub** compila los contratos, corre todas las pruebas y construye la app en cada cambio.
 
-Lo que **no** hace todavía: repartir ganancias dentro del contrato, verificar a los inversionistas, usar pesos reales ni resolver lo legal. Es un prototipo en testnet.
+Lo que **no** hace todavía: repartir ganancias dentro del contrato, verificar a los inversionistas, usar pesos reales ni resolver lo legal. El pago es en XLM de prueba; en producción sería una moneda estable (stablecoin). Es un prototipo en testnet.
+
+## Revisión técnica y hoja de ruta
+
+El 12 de noviembre de 2026 el proyecto tuvo una revisión técnica del Semillero (Juan Pablo Conrado Molina). Estos son los hallazgos y lo que sigue. No se redesplegaron contratos antes del Demo Day: se corrigieron los textos para que digan lo que el contrato de verdad garantiza.
+
+| # | Hallazgo | Estado hoy | Siguiente paso |
+|---|---|---|---|
+| H1 | La fiduciaria puede cerrar la ronda antes del plazo con cualquier monto vendido; tras el cierre no hay reembolso | Textos de la app y los docs corregidos | `minimo_fracciones` en la configuración, exigido en `cerrar` y visible para el inversionista antes de invertir |
+| H2 | La cuenta emisora conserva su llave y puede crear fracciones por fuera del contrato | Declarado | Una emisora nueva por ronda, bloqueada (peso 0) dentro de `ronda.sh` después de `set_admin`; cambiar el `saturating_sub` de `reembolsar` por una verificación |
+| H3 | `init` no pide firma y va aparte del despliegue | Declarado desde el diseño | Cambiar `init` por `__constructor`, en la misma transacción del despliegue |
+| H4 | Una ronda exitosa que nunca se libera no tiene salida | Declarado | `plazo_liberacion`: si pasa sin liberar, la ronda vuelve a ser reembolsable; multifirma en la cuenta de la fiduciaria |
+| H5 | La app acepta cualquier contrato que venga en el enlace | Declarado (se usa para la demo) | Aceptar solo contratos del catálogo o mostrar «ronda externa, no verificada» |
+| H6 | El reparto fuera del contrato tiene límites (200 tenedores, 100 pagos por transacción) | Declarado | Reparto «pull» dentro del contrato: cada tenedor reclama su parte |
+| H7 | Sin eventos; TTL de 60 días; pago en XLM | Declarado | Eventos en `invertir`, `cerrar`, `liberar` y `reembolsar`; extender el TTL; pagar con una moneda estable (stablecoin) |
+
+Además: liberación por hitos de obra y la ruta legal (aliarse con una fiduciaria o una plataforma autorizada por la Superintendencia Financiera; la financiación colaborativa está regulada por el Decreto 1357 de 2018).
 
 ## Probar la app
 
@@ -49,7 +65,7 @@ npm install
 npm run dev        # muestra el puerto, normalmente http://localhost:5173
 ```
 
-Requisitos: Node 20 o superior y la extensión **Freighter en TEST NET**, con XLM de prueba (Friendbot). La app trae una ronda por defecto; para crear rondas nuevas y ensayar la demo completa, sigue [`demo/README.md`](demo/README.md).
+Requisitos: Node 20 o superior y la extensión **Varial en TEST NET**, con XLM de prueba (Friendbot). La app trae una ronda por defecto; para crear rondas nuevas y ensayar la demo completa, sigue [`demo/README.md`](demo/README.md).
 
 ## El activo de las fracciones
 
@@ -58,13 +74,13 @@ Cada fracción es **1,0000000 de un activo de Stellar** del proyecto. El contrat
 | Dato | Valor |
 |---|---|
 | Ronda por defecto | Mirador de los Cedros, activo `CEDROS` |
-| Fiduciaria | `GAATGMTDWWWTRSFYMDKCGGV2ALLFFOSWTSJPJGIGDGSU4J2POOGLNFWX` (la wallet de Freighter de Santiago: firma `cerrar`, `liberar` y los repartos; no firmó la creación de las rondas) |
+| Fiduciaria | `GAATGMTDWWWTRSFYMDKCGGV2ALLFFOSWTSJPJGIGDGSU4J2POOGLNFWX` (la wallet de Varial de Santiago: firma `cerrar`, `liberar` y los repartos; no firmó la creación de las rondas) |
 | Emisora | `GAK6FDVYLICN6GTW7TVEZJ65PWNM3OV474PMWQKBYS6VYPL2PLTV2SYB` |
 | Contrato de fondeo | `CAJISXLJQL67VLMTJSLD2BVE2GFVIEYYAZB5AW3JFR4K3PSSHI7XKLE4` |
 | Ronda | 1.200 fracciones de 10 XLM ($1.000.000 cada una), meta de $1.200 millones, hasta el 26 de noviembre de 2026 (11:56 p. m.) |
 | Explorador | https://stellar.expert/explorer/testnet/asset/CEDROS-GAK6FDVYLICN6GTW7TVEZJ65PWNM3OV474PMWQKBYS6VYPL2PLTV2SYB |
 
-Cada ronda usa su propio activo y contrato. Las seis rondas del catálogo y la ronda de ensayo (`ENSAYO`, ver [`demo/README.md`](demo/README.md)) tienen como fiduciaria la wallet de Freighter de Santiago, y su contrato incluye el **cierre anticipado**. Las rondas anteriores (`ALAMEDA1`, `ALAMEDA2` y las versiones previas del catálogo) ya no se usan: lo que se escribe en la blockchain no se borra, pero la app y los docs solo apuntan a las vigentes.
+Cada ronda usa su propio activo y contrato. Las seis rondas del catálogo y la ronda de ensayo (`ENSAYO`, ver [`demo/README.md`](demo/README.md)) tienen como fiduciaria la wallet de Varial de Santiago, y su contrato incluye el **cierre anticipado**. Las rondas anteriores (`ALAMEDA1`, `ALAMEDA2` y las versiones previas del catálogo) ya no se usan: lo que se escribe en la blockchain no se borra, pero la app y los docs solo apuntan a las vigentes.
 
 ## Proyectos del catálogo
 
@@ -90,7 +106,7 @@ README.md                      ← esta página
 DEBUG_LOG.md                   ← lo que se rompió y cómo lo resolvimos
 app/                           ← dApp (React + Vite) conectada al contrato de fondeo
   src/                         ← App.jsx (pantallas), fondeo.js (habla con el contrato),
-                                  wallet.js (firma con Freighter), stellar.js (starter)
+                                  wallet.js (firma con Varial), stellar.js (starter)
 contracts/
   fondeo/                      ← inversión fraccionada con un activo de Stellar
 demo/                          ← guía de la demo y ronda.sh (crea rondas de prueba)
@@ -105,7 +121,7 @@ Docs/
 
 - **Etapa anterior, separación de vivienda con pago bloqueado:** se retiró del repositorio para dejar solo el proyecto definitivo. Sigue guardada en la etiqueta `antes-de-quitar-la-separacion` y en la rama `semana-4/app-separacion`. Para recuperarla: `git checkout antes-de-quitar-la-separacion -- contracts/separacion Docs/DISENO_CONTRATO.md`.
 - **Sesión 2:** primer activo del equipo, `INMUEBLE` (emisora `GB6NHYBNEESIBXH4JQFLX7SQYIZUNBAQNGNZCYRFT6RWNHEQIW6RK4ND`, distribuidora `GBHAHSJU2JT7ZIZ7U73CMAPKGK4STVFFCEI7SPAB7SKX6TDD5E233GRG`, 1 000 000 emitidos). [Explorador](https://stellar.expert/explorer/testnet/asset/INMUEBLE-GB6NHYBNEESIBXH4JQFLX7SQYIZUNBAQNGNZCYRFT6RWNHEQIW6RK4ND).
-- **Semana 3, pago hecho desde la app:** 10 `INMUEBLE` de la Freighter de Santiago (`GAATGMTDWWWTRSFYMDKCGGV2ALLFFOSWTSJPJGIGDGSU4J2POOGLNFWX`) a `alice` (`GDMXXGNVCOLW3G3QGW3XJSOG7IKIRMJUNPAJHY5WH4EOMPCDNFZUT7GD`), hash `f03796503357db92cf7ee34a61b6a4d68bf4fe5283a446f5d0c8cd8118ff4b0e` ([ver](https://stellar.expert/explorer/testnet/tx/f03796503357db92cf7ee34a61b6a4d68bf4fe5283a446f5d0c8cd8118ff4b0e)). Antes: trustline (`58ce984ef813f63890e89088ea4f560928b557e2cc22de845171ec9506fd4c0d`) y 100 `INMUEBLE` recibidos de la distribuidora (`4390f0810c3f51a37fa8c663f9920caa106bbeb7377ea9c77730d287343beedf`).
+- **Semana 3, pago hecho desde la app:** 10 `INMUEBLE` de la Varial de Santiago (`GAATGMTDWWWTRSFYMDKCGGV2ALLFFOSWTSJPJGIGDGSU4J2POOGLNFWX`) a `alice` (`GDMXXGNVCOLW3G3QGW3XJSOG7IKIRMJUNPAJHY5WH4EOMPCDNFZUT7GD`), hash `f03796503357db92cf7ee34a61b6a4d68bf4fe5283a446f5d0c8cd8118ff4b0e` ([ver](https://stellar.expert/explorer/testnet/tx/f03796503357db92cf7ee34a61b6a4d68bf4fe5283a446f5d0c8cd8118ff4b0e)). Antes: trustline (`58ce984ef813f63890e89088ea4f560928b557e2cc22de845171ec9506fd4c0d`) y 100 `INMUEBLE` recibidos de la distribuidora (`4390f0810c3f51a37fa8c663f9920caa106bbeb7377ea9c77730d287343beedf`).
 - **Getting Started:** `hello_world` e `increment` desplegados en testnet; ver [`Docs/Ruta JaveBlockchain/gettingStarted.md`](<Docs/Ruta JaveBlockchain/gettingStarted.md>).
 
 ## Enlaces

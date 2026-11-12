@@ -27,7 +27,7 @@ export async function planDeReparto(horizon, { codigo, emisor, monto }) {
 
 /**
  * Todos los pagos juntos, en UNA transacción de la fiduciaria, con la nota "REPARTO <codigo>". Devuelve el hash.
- * `firmar(xdr)` recibe la transacción sin firmar y devuelve `{ signedTxXdr }`: en la app firma Freighter
+ * `firmar(xdr)` recibe la transacción sin firmar y devuelve `{ signedTxXdr }`: en la app firma Varial
  * (la llave nunca sale de la extensión).
  */
 export async function enviarReparto(horizon, { desde, codigo, pagos, firmar }) {

@@ -23,7 +23,7 @@ function conMuestra(datos, i) {
 
 /**
  * Portal de la fiduciaria: una sola pantalla con las rondas del catálogo que esa wallet administra.
- * Liberar los fondos y repartir ganancias se firman con Freighter, como en el panel de «Seguimiento».
+ * Liberar los fondos y repartir ganancias se firman con Varial, como en el panel de «Seguimiento».
  */
 export default function PortalFiduciaria({ address, conectar, ocupado, setOcupado, setAviso, error, avisoFirmada, muestra }) {
   const [rondas, setRondas] = useState({}); // id del proyecto -> { resumen, config }
@@ -52,7 +52,7 @@ export default function PortalFiduciaria({ address, conectar, ocupado, setOcupad
   async function liberarRonda(p) {
     try {
       setOcupado(true);
-      setAviso({ tipo: "info", texto: `Esperando tu firma en Freighter para liberar los fondos de ${p.nombre}…` });
+      setAviso({ tipo: "info", texto: `Esperando tu firma en Varial para liberar los fondos de ${p.nombre}…` });
       const cliente = await crearCliente({ contrato: p.contrato, publicKey: address, signTransaction: firmarConFreighter(address, avisoFirmada) });
       const { hash } = await liberar(cliente);
       await cargar();
@@ -67,7 +67,7 @@ export default function PortalFiduciaria({ address, conectar, ocupado, setOcupad
   async function cerrarRonda(p) {
     try {
       setOcupado(true);
-      setAviso({ tipo: "info", texto: `Esperando tu firma en Freighter para cerrar ${p.nombre} antes de tiempo…` });
+      setAviso({ tipo: "info", texto: `Esperando tu firma en Varial para cerrar ${p.nombre} antes de tiempo…` });
       const cliente = await crearCliente({ contrato: p.contrato, publicKey: address, signTransaction: firmarConFreighter(address, avisoFirmada) });
       const { hash } = await cerrarAntes(cliente);
       await cargar();
@@ -84,7 +84,7 @@ export default function PortalFiduciaria({ address, conectar, ocupado, setOcupad
   async function repartirRonda(p, plan, monto) {
     try {
       setOcupado(true);
-      setAviso({ tipo: "info", texto: `Esperando tu firma en Freighter para repartir ${monto} XLM de ${p.nombre}…` });
+      setAviso({ tipo: "info", texto: `Esperando tu firma en Varial para repartir ${monto} XLM de ${p.nombre}…` });
       const hash = await enviarReparto(horizon, { desde: address, codigo: p.codigo, pagos: plan.pagos, firmar: firmarConFreighter(address, avisoFirmada) });
       await cargar();
       setAviso({ tipo: "ok", texto: `Reparto de ${monto} XLM de ${p.nombre} enviado a ${plan.pagos.length} tenedor(es).`, hash });
@@ -97,7 +97,7 @@ export default function PortalFiduciaria({ address, conectar, ocupado, setOcupad
 
   return (
     <>
-      <Cabecera etiqueta="Fiduciaria" titulo="Portal de la fiduciaria" texto="Las rondas que administras, en un solo lugar. Cada acción se firma con tu Freighter." />
+      <Cabecera etiqueta="Fiduciaria" titulo="Portal de la fiduciaria" texto="Las rondas que administras, en un solo lugar. Cada acción se firma con tu Varial." />
 
       {!quien && (
         <div className="portal-aviso">
@@ -108,7 +108,7 @@ export default function PortalFiduciaria({ address, conectar, ocupado, setOcupad
 
       {quien && mias === 0 && Object.keys(rondas).length > 0 && (
         <div className="portal-aviso">
-          La wallet conectada ({corto(quien)}) no es la fiduciaria de estas rondas. Cámbiate en Freighter a la cuenta de la fiduciaria
+          La wallet conectada ({corto(quien)}) no es la fiduciaria de estas rondas. Cámbiate en Varial a la cuenta de la fiduciaria
           ({corto(fiduciariaDeLasRondas)}) y recarga.
         </div>
       )}

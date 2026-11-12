@@ -1,12 +1,12 @@
 # Diseño del contrato de fondeo · Equipo Machea
 
-> Una página. Contrato de **inversión fraccionada con un activo de Stellar**: un proyecto abre una ronda de fondeo, cualquiera puede comprar fracciones, el dinero queda bloqueado en el contrato y solo se libera si se llega a la meta. Se revisa **antes** de escribir código.
+> Una página. Contrato de **inversión fraccionada con un activo de Stellar**: un proyecto abre una ronda de fondeo, cualquiera puede comprar fracciones, el dinero queda bloqueado en el contrato y se libera si se llega a la meta o si la fiduciaria cierra la ronda antes del plazo. Se revisa **antes** de escribir código.
 
 > **Nota:** los ejemplos de esta página usan `ALAMEDA`, la primera ronda de pruebas. Las rondas actuales son las seis del catálogo (ver el [README](../README.md)) y sus cifras están en [`MODELO_FINANCIERO.md`](MODELO_FINANCIERO.md). Las pruebas de la sección 14 son del primer despliegue.
 
 ## 1. El problema en una frase
 
-Una persona con montos pequeños no puede invertir en un proyecto inmobiliario porque tiene que confiar su dinero a un tercero que lo administra sin que ella vea qué pasa; con el contrato, cualquiera compra fracciones del proyecto, el dinero queda bloqueado a la vista de todos, y solo se libera a la constructora si se completa la meta: si no, cada inversionista recupera lo suyo.
+Una persona con montos pequeños no puede invertir en un proyecto inmobiliario porque tiene que confiar su dinero a un tercero que lo administra sin que ella vea qué pasa; con el contrato, cualquiera compra fracciones del proyecto, el dinero queda bloqueado a la vista de todos, y se libera a la constructora si se completa la meta o si la fiduciaria cierra la ronda antes del plazo; si vence el plazo sin ninguna de las dos, cada inversionista recupera lo suyo.
 
 ## 2. ¿Por qué un contrato y no una base de datos?
 
@@ -16,7 +16,7 @@ Las partes no se conocen ni confían entre sí:
 - **La constructora**, que necesita los fondos solo si el proyecto se financia completo.
 - **La fiduciaria**, que autoriza la liberación a la constructora.
 
-En una base de datos, quien la administra puede cambiar cuánto puso cada uno o retener el dinero. Con el contrato: el dinero lo tiene el contrato; la regla «meta completa o devolución» la cumple el código y no una persona; y cualquiera ve cuántas fracciones hay y cuánto se ha recaudado en stellar.expert.
+En una base de datos, quien la administra puede cambiar cuánto puso cada uno o retener el dinero. Con el contrato: el dinero lo tiene el contrato; el reembolso cuando vence el plazo sin meta lo cumple el código y no una persona (el cierre anticipado sí depende de la fiduciaria: ver la sección 11); y cualquiera ve cuántas fracciones hay y cuánto se ha recaudado en stellar.expert.
 
 Límite que decimos en voz alta: el contrato no sabe si la constructora usa bien el dinero después de recibirlo. Eso es de la fiduciaria y de la obra, y queda como siguiente paso.
 
@@ -26,9 +26,9 @@ Cada **fracción** es **1,0000000 de un activo de Stellar** del proyecto (por ej
 
 Qué significa en la práctica:
 - **El propio contrato emite los tokens**: la cuenta emisora le entrega al contrato el rol de administrador del activo (`set_admin` del SAC), y así el contrato puede crear tokens cuando alguien invierte y destruirlos cuando alguien se reembolsa.
-- **Freighter y stellar.expert lo muestran solos**, con su suministro y sus tenedores.
+- **Varial y stellar.expert lo muestran solos**, con su suministro y sus tenedores.
 - **Pasarle fracciones a otra persona es un pago normal de Stellar.** No hace falta una función del contrato.
-- **El inversionista necesita aceptar el activo antes (trustline)**, igual que con `INMUEBLE`. La app se lo pide con Freighter.
+- **El inversionista necesita aceptar el activo antes (trustline)**, igual que con `INMUEBLE`. La app se lo pide con Varial.
 - **El token es el derecho**: quien tiene tokens es quien puede pedir el reembolso si la ronda falla. Así, si alguien le pasó sus fracciones a otra persona, el reembolso va para quien las tiene (como una cesión de derechos).
 
 ## 4. Estado: qué guarda y dónde
@@ -106,7 +106,7 @@ Cada error lleva su descripción en español, para que la app la muestre.
 ## 8. Flujo principal (quién llama qué, en orden)
 
 1. La emisora crea el activo `ALAMEDA`; la fiduciaria despliega el contrato y le entrega la administración del activo; luego llama `init(...)`: 1 000 fracciones de 10 XLM y 7 días de plazo.
-2. Ana acepta el activo en su wallet (trustline) y llama `invertir(Ana, 5)`: Freighter le pide firmar, el contrato recibe 50 XLM y **le entrega 5 `ALAMEDA`**, que ya aparecen en su Freighter.
+2. Ana acepta el activo en su wallet (trustline) y llama `invertir(Ana, 5)`: Varial le pide firmar, el contrato recibe 50 XLM y **le entrega 5 `ALAMEDA`**, que ya aparecen en su Varial.
 3. Otras personas invierten. La app muestra la barra de avance con `resumen()`.
 4. **Si se venden las 1 000 fracciones:** la ronda pasa a `Exitosa`. La fiduciaria llama `liberar()` y los 10 000 XLM van a la constructora.
 5. **Si pasan los 7 días sin completar la meta:** la ronda es fallida y cada tenedor llama `reembolsar` para devolver sus tokens y recuperar su dinero, sin pedir permiso.
@@ -155,7 +155,7 @@ Cada error lleva su descripción en español, para que la app la muestre.
 | El token de participación (`ALAMEDA`) | Red de Stellar: activo clásico |
 | Las reglas de la ronda | Contrato Soroban, en la red de Stellar |
 | Quién tiene cuántas fracciones | El propio activo de Stellar |
-| La firma de cada operación | Freighter, wallet de Stellar |
+| La firma de cada operación | Varial, wallet de Stellar |
 | La lectura de balances y del contrato | Horizon y RPC de Stellar |
 | Lo que **no** está en la red | La página (React), el código en GitHub, el nombre y la foto del proyecto, y los pesos de ejemplo |
 
@@ -164,6 +164,10 @@ Cada error lleva su descripción en español, para que la app la muestre.
 - **El contrato no reparte ganancias** (arriendos o venta). En la demo la fiduciaria las reparte desde su panel en la app (una sola transacción de pagos, firmada con su wallet), fuera del contrato; el reparto dentro del contrato se diseña como siguiente paso.
 - **`init` no pide la firma de la fiduciaria**: quien despliega el contrato elige quién es la fiduciaria. Se decidió así para simplificar la preparación de las rondas (se despliegan y configuran seguidas, desde la terminal). El riesgo es que alguien configure primero un contrato recién desplegado y ajeno; en producción se usaría el *constructor* de Soroban, que configura el contrato en el mismo momento en que se crea.
 - **No verifica a los inversionistas**: cualquiera con una wallet puede invertir (decisión tomada para la demo).
+- **El cierre anticipado no tiene mínimo**: la fiduciaria puede cerrar con una sola fracción vendida, y después del cierre no hay reembolso. Falta un `minimo_fracciones` pactado y visible (hallazgo H1 de la revisión).
+- **La cuenta emisora no está bloqueada**: conserva su llave y podría crear fracciones por fuera del contrato (H2). Falta bloquearla después de `set_admin`.
+- **Una ronda exitosa que nunca se libera no tiene salida** (H4), **el contrato no emite eventos** y **el TTL se extiende solo 60 días** (H7).
+- **El pago es en XLM**: en producción sería una moneda estable.
 - **No controla cómo la constructora usa el dinero** después de recibirlo, ni libera por hitos de obra.
 - **No hay un mercado** para vender fracciones: se pueden pasar con un pago normal, pero el precio se acuerda aparte.
 - **Una ronda por contrato**: un contrato por proyecto.
@@ -174,7 +178,7 @@ Cada error lleva su descripción en español, para que la app la muestre.
 | Pantalla | Qué ve el usuario | Botón → función |
 |---|---|---|
 | Mi portafolio | sus fracciones de `ALAMEDA` (balance del activo) y su participación (`fracciones ÷ total`) | — (lectura de la cuenta) |
-| Invertir en un proyecto | meta, recaudado, plazo y precio por fracción | «Aceptar el activo» (trustline) y luego «Invertir con Freighter» → `invertir`; si falló la ronda, «Recuperar mi dinero» → `reembolsar` |
+| Invertir en un proyecto | meta, recaudado, plazo y precio por fracción | «Aceptar el activo» (trustline) y luego «Invertir con Varial» → `invertir`; si falló la ronda, «Recuperar mi dinero» → `reembolsar` |
 | Seguimiento del proyecto | pasos (inversión realizada → recaudando → meta alcanzada → fondos a la constructora) y barra de avance | — (`resumen`); la fiduciaria usa `liberar` |
 
 ## 13. Cómo se conecta con Machea, y el mapa de ruta
@@ -219,4 +223,4 @@ Todavía sin probar: la app conectada al contrato de fondeo, y el reparto de gan
 
 ---
 
-Revisado en office hours el [fecha] por [mentor]. Cambios pedidos: [ ].
+Revisado en working hours el 12 de noviembre de 2026 por Juan Pablo Conrado Molina. Cambios pedidos: mínimo de cierre (H1), bloquear la emisora (H2), `__constructor` en lugar de `init` (H3), plazo de liberación (H4), validar el contrato del enlace (H5), reparto «pull» en el contrato (H6), eventos, TTL y stablecoin (H7). Ver la hoja de ruta en el [README](../README.md).

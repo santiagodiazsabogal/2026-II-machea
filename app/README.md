@@ -1,6 +1,6 @@
 # App de fondeo (React + Vite)
 
-La interfaz de Machea para invertir en fracciones de un proyecto. Conecta Freighter, lee la ronda de fondeo desde su contrato en Stellar y te deja **invertir**, ver el **seguimiento**, **recuperar tu dinero** si la ronda fracasa y ver las **ganancias** que te reparte la fiduciaria.
+La interfaz de Machea para invertir en fracciones de un proyecto. Conecta Varial, lee la ronda de fondeo desde su contrato en Stellar y te deja **invertir**, ver el **seguimiento**, **recuperar tu dinero** si la ronda fracasa y ver las **ganancias** que te reparte la fiduciaria.
 
 ```bash
 npm install
@@ -8,7 +8,7 @@ npm run dev        # muestra el puerto, normalmente http://localhost:5173
 npm run build      # compila para producción
 ```
 
-Requisitos: Node 20 o superior y la extensión Freighter en modo TEST NET, con XLM de prueba.
+Requisitos: Node 20 o superior y la extensión Varial en modo TEST NET, con XLM de prueba.
 
 ## Qué hay en `src/`
 
@@ -17,9 +17,9 @@ Requisitos: Node 20 o superior y la extensión Freighter en modo TEST NET, con X
 | `App.jsx` | Las pantallas (Mi portafolio, Proyectos, Invertir, Seguimiento) y todo el estado |
 | `fondeo.js` | Todo lo que habla con el contrato de fondeo: leer la ronda, invertir, liberar, reembolsar y leer ganancias. No tiene interfaz, así que se puede probar desde la terminal |
 | `Proyectos.jsx`, `proyectos.js` | El catálogo de los seis proyectos: datos, imagen y la ronda de cada uno. El contrato no guarda el nombre ni la imagen del proyecto |
-| `PortalFiduciaria.jsx`, `Fiduciaria.jsx`, `reparto.js` | El portal de la fiduciaria (pestaña «Fiduciaria», visible solo con la wallet de la fiduciaria, o `#fiduciaria`: las seis rondas del catálogo), el panel para liberar y repartir (firmados con Freighter, con confirmación y con el monto pactado) y el cálculo del reparto |
+| `PortalFiduciaria.jsx`, `Fiduciaria.jsx`, `reparto.js` | El portal de la fiduciaria (pestaña «Fiduciaria», visible solo con la wallet de la fiduciaria, o `#fiduciaria`: las seis rondas del catálogo), el panel para liberar y repartir (firmados con Varial, con confirmación y con el monto pactado) y el cálculo del reparto |
 | `Ficha.jsx`, `finanzas.js` | La ficha financiera de cada proyecto, la proyección de lo que gana quien invierte y la etiqueta VIS / No VIS. Las cuentas están explicadas en `Docs/MODELO_FINANCIERO.md` |
-| `wallet.js` | Le pide a Freighter que firme. La llave secreta nunca sale de la extensión |
+| `wallet.js` | Le pide a Varial que firme. La llave secreta nunca sale de la extensión |
 | `stellar.js` | Del starter de la sesión 3: conectar la wallet, leer balances (Horizon) y aceptar un activo (`changeTrust`) |
 | `icons.jsx`, `styles.css` | Íconos y estilo de Machea |
 

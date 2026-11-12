@@ -11,6 +11,6 @@
 - **Rol:** escribe `Técnico` o `Emprendimiento`, uno por persona.
 - **Wallet:** tu dirección **pública** de testnet. Empieza por `G` y tiene 56 caracteres.
   - Desde la terminal: `stellar keys address <tu-alias>`
-  - Desde Freighter: copia la dirección con la red en **Testnet**.
+  - Desde Varial: copia la dirección con la red en **Testnet**.
 
 > ⚠️ **Nunca pegues tu llave secreta** (la que empieza por `S`) ni tu frase de recuperación. Cualquiera que la vea controla tu cuenta, y este repositorio podría hacerse público.

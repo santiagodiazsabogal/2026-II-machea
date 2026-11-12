@@ -109,7 +109,7 @@ export default function App() {
   async function conectar() {
     try {
       setOcupado(true);
-      setAviso({ tipo: "info", texto: "Conectando con Freighter…" });
+      setAviso({ tipo: "info", texto: "Conectando con Varial (antes Freighter)…" });
       setAddress(await conectarWallet());
       setAviso(null);
     } catch (e) {
@@ -126,7 +126,7 @@ export default function App() {
   async function aceptarActivo() {
     try {
       setOcupado(true);
-      setAviso({ tipo: "info", texto: "Esperando tu firma en Freighter para aceptar el activo…" });
+      setAviso({ tipo: "info", texto: "Esperando tu firma en Varial para aceptar el activo…" });
       const hash = await agregarTrustline({ desde: address, codigo: ACTIVO.codigo, emisor: ACTIVO.emisor });
       setAviso({ tipo: "info", texto: "Activo aceptado. Actualizando tu cuenta…" });
       await refrescar();
@@ -141,7 +141,7 @@ export default function App() {
   async function accion(texto, fn) {
     try {
       setOcupado(true);
-      setAviso({ tipo: "info", texto: "Simulando la transacción y esperando tu firma en Freighter…" });
+      setAviso({ tipo: "info", texto: "Simulando la transacción y esperando tu firma en Varial…" });
       const { hash } = await fn(await clienteConFirma());
       await refrescar();
       setAviso({ tipo: "ok", texto, hash });
@@ -152,12 +152,12 @@ export default function App() {
     }
   }
 
-  // Fiduciaria: calcula quién recibe cuánto y, tras la confirmación, lo envía firmado con Freighter.
+  // Fiduciaria: calcula quién recibe cuánto y, tras la confirmación, lo envía firmado con Varial.
   const calcularReparto = (monto) => planDeReparto(horizon, { codigo: ACTIVO.codigo, emisor: ACTIVO.emisor, monto });
   async function enviarElReparto(plan, monto) {
     try {
       setOcupado(true);
-      setAviso({ tipo: "info", texto: "Esperando tu firma en Freighter para enviar el reparto…" });
+      setAviso({ tipo: "info", texto: "Esperando tu firma en Varial para enviar el reparto…" });
       const hash = await enviarReparto(horizon, { desde: address, codigo: ACTIVO.codigo, pagos: plan.pagos, firmar: firmarConFreighter(address, avisoFirmada) });
       await refrescar();
       setAviso({ tipo: "ok", texto: `Reparto de ${monto} XLM enviado a ${plan.pagos.length} tenedor(es).`, hash });
@@ -390,7 +390,7 @@ function Invertir({ wallet, resumen, cantidad, setFracciones, misFracciones, tie
   else if (!resumen) boton = <button className="btn" disabled>Cargando la ronda…</button>;
   else if (!abierta) boton = <button className="btn" disabled>La ronda ya no recibe inversiones</button>;
   else if (!tieneTrustline) boton = <button className="btn main" onClick={aceptarActivo} disabled={ocupado}><Billetera size={22} />1. Aceptar el activo {ACTIVO.codigo}</button>;
-  else boton = <button className="btn main" onClick={invertir} disabled={ocupado}><Billetera size={22} />Invertir con Freighter</button>;
+  else boton = <button className="btn main" onClick={invertir} disabled={ocupado}><Billetera size={22} />Invertir con Varial</button>;
 
   return (
     <>
@@ -463,7 +463,7 @@ function Invertir({ wallet, resumen, cantidad, setFracciones, misFracciones, tie
 
           <div className="caja verde">
             <Info size={24} />
-            <div><b>¿Qué sucede con mi dinero?</b>Tu dinero queda bloqueado en un contrato en Stellar. Si no se completa la meta, lo recuperas tú mismo.</div>
+            <div><b>¿Qué sucede con mi dinero?</b>Tu dinero queda bloqueado en un contrato en Stellar. Si la ronda no llega a la meta y la fiduciaria no la cierra antes del plazo, lo recuperas tú mismo. En producción el pago sería en una moneda estable, no en XLM.</div>
           </div>
         </div>
       </div>
@@ -516,7 +516,7 @@ function Seguimiento({ resumen, config, wallet, misFracciones, ocupado, conectar
               <Paso
                 estado={estado === "Liberada" ? "hecho" : estado === "Fallida" ? "no" : "pendiente"}
                 titulo="Fondos a la constructora"
-                detalle={estado === "Liberada" ? "La fiduciaria los liberó" : estado === "Fallida" ? "Cada inversionista recupera su dinero" : "La fiduciaria los libera al alcanzar la meta"}
+                detalle={estado === "Liberada" ? "La fiduciaria los liberó" : estado === "Fallida" ? "Cada inversionista recupera su dinero" : "La fiduciaria los libera al alcanzar la meta o si cierra la ronda antes del plazo"}
               />
             </ul>
             <div className="avance sola">
@@ -548,7 +548,8 @@ function Seguimiento({ resumen, config, wallet, misFracciones, ocupado, conectar
           <div className="que">
             <h3><Escudo size={26} />¿Qué puede pasar?</h3>
             <p><b>Se llega a la meta:</b> la fiduciaria libera el dinero a la constructora y tus fracciones son tu participación en el proyecto.</p>
-            <p className="malo"><b>No se llega a la meta:</b> devuelves tus fracciones y recuperas tu dinero, sin pedirle permiso a nadie.</p>
+            <p><b>La fiduciaria cierra antes del plazo:</b> la ronda queda cerrada con lo recaudado hasta ese momento, se libera a la constructora y ya no hay reembolso.</p>
+            <p className="malo"><b>Vence el plazo sin meta ni cierre:</b> devuelves tus fracciones y recuperas tu dinero, sin pedirle permiso a nadie.</p>
           </div>
 
           {!wallet && <button className="btn" onClick={conectar} disabled={ocupado}><Billetera size={22} />Conectar wallet para actuar</button>}

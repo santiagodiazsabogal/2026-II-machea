@@ -1,4 +1,4 @@
-// Freighter firma el XDR; la llave secreta nunca sale de la extensión.
+// Varial firma el XDR; la llave secreta nunca sale de la extensión.
 import { signTransaction } from "@stellar/freighter-api";
 import { NETWORK_PASSPHRASE } from "./fondeo.js";
 

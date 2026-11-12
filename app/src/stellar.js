@@ -16,7 +16,7 @@ export const EXPLORER = "https://stellar.expert/explorer/testnet";
 
 const server = new Horizon.Server(HORIZON_URL);
 
-/** Pide permiso a Freighter y devuelve la dirección pública (G...). */
+/** Pide permiso a Varial y devuelve la dirección pública (G...). */
 export async function conectarWallet() {
   const acceso = await requestAccess();
   if (acceso.error) throw new Error(acceso.error);
@@ -37,7 +37,7 @@ export async function cargarBalances(address) {
 }
 
 /**
- * Arma una transacción con las operaciones dadas, la manda a firmar a Freighter
+ * Arma una transacción con las operaciones dadas, la manda a firmar a Varial
  * y la envía a Horizon. Devuelve el hash. Es el mismo "sobre" de la sesión 2.
  */
 async function firmarYEnviar({ desde, operaciones, memo }) {
@@ -52,7 +52,7 @@ async function firmarYEnviar({ desde, operaciones, memo }) {
     .setTimeout(60)
     .build();
 
-  // La llave secreta nunca sale de Freighter: le pasamos el XDR y nos devuelve el XDR firmado.
+  // La llave secreta nunca sale de Varial: le pasamos el XDR y nos devuelve el XDR firmado.
   const firmado = await signTransaction(tx.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE, address: desde });
   if (firmado.error) throw new Error(typeof firmado.error === "string" ? firmado.error : firmado.error.message);
 
