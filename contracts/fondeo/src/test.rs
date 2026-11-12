@@ -10,16 +10,24 @@ use soroban_sdk::{
 const PRECIO: i128 = 1_000;
 const TOTAL: u32 = 10;
 const DURACION: u64 = 7 * 24 * 60 * 60;
+/// Plazo que tiene la fiduciaria para liberar después del éxito.
+const PLAZO_LIBERACION: u64 = 30 * 24 * 60 * 60;
 
 struct Escenario<'a> {
     env: Env,
     cliente: FondeoContractClient<'a>,
     pago: TokenClient<'a>,
     fracciones: TokenClient<'a>,
+    fiduciaria: Address,
     constructora: Address,
 }
 
+/// Ronda con mínimo de cierre de 1 fracción (el caso más permisivo).
 fn preparar<'a>() -> Escenario<'a> {
+    preparar_con_minimo(1)
+}
+
+fn preparar_con_minimo<'a>(minimo: u32) -> Escenario<'a> {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -30,27 +38,33 @@ fn preparar<'a>() -> Escenario<'a> {
     // entrega al contrato la administración del activo.
     let emisor = Address::generate(&env);
     let fracciones_id = env.register_stellar_asset_contract_v2(emisor).address();
-    let contrato = env.register(FondeoContract, ());
-    StellarAssetClient::new(&env, &fracciones_id).set_admin(&contrato);
 
     let fiduciaria = Address::generate(&env);
     let constructora = Address::generate(&env);
-    let cliente = FondeoContractClient::new(&env, &contrato);
-    cliente.init(
-        &fiduciaria,
-        &constructora,
-        &pago_id,
-        &fracciones_id,
-        &PRECIO,
-        &TOTAL,
-        &DURACION,
+    // El contrato se configura en el mismo despliegue (constructor).
+    let contrato = env.register(
+        FondeoContract,
+        (
+            fiduciaria.clone(),
+            constructora.clone(),
+            pago_id.clone(),
+            fracciones_id.clone(),
+            PRECIO,
+            TOTAL,
+            DURACION,
+            minimo,
+            PLAZO_LIBERACION,
+        ),
     );
+    StellarAssetClient::new(&env, &fracciones_id).set_admin(&contrato);
+    let cliente = FondeoContractClient::new(&env, &contrato);
 
     Escenario {
         pago: TokenClient::new(&env, &pago_id),
         fracciones: TokenClient::new(&env, &fracciones_id),
         env,
         cliente,
+        fiduciaria,
         constructora,
     }
 }
@@ -75,54 +89,79 @@ fn pasar_el_plazo(e: &Escenario) {
         .set_timestamp(e.env.ledger().timestamp() + DURACION);
 }
 
-#[test]
-fn init_solo_una_vez() {
-    let e = preparar();
-    let otro = Address::generate(&e.env);
-    let res = e
-        .cliente
-        .try_init(&otro, &otro, &otro, &otro, &PRECIO, &TOTAL, &DURACION);
-    assert_eq!(res, Err(Ok(Error::AlreadyInitialized)));
+fn registrar(env: &Env, precio: i128, total: u32, duracion: u64, minimo: u32, plazo: u64) {
+    let a = Address::generate(env);
+    env.register(
+        FondeoContract,
+        (
+            a.clone(),
+            a.clone(),
+            a.clone(),
+            a.clone(),
+            precio,
+            total,
+            duracion,
+            minimo,
+            plazo,
+        ),
+    );
 }
 
 #[test]
-fn init_no_pide_la_firma_de_la_fiduciaria() {
-    // Sin ninguna firma simulada: quien despliega elige la fiduciaria y la configuración queda guardada.
-    let env = Env::default();
-    let contrato = env.register(FondeoContract, ());
-    let cliente = FondeoContractClient::new(&env, &contrato);
-    let fiduciaria = Address::generate(&env);
-    cliente.init(
-        &fiduciaria,
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &PRECIO,
-        &TOTAL,
-        &DURACION,
-    );
-    assert_eq!(cliente.config().fiduciaria, fiduciaria);
+fn el_constructor_guarda_la_configuracion() {
+    let e = preparar_con_minimo(7);
+    let config = e.cliente.config();
+    assert_eq!(config.fiduciaria, e.fiduciaria);
+    assert_eq!(config.constructora, e.constructora);
+    assert_eq!(config.minimo_fracciones, 7);
+    assert_eq!(config.plazo_liberacion, PLAZO_LIBERACION);
+    let r = e.cliente.resumen();
+    assert_eq!(r.estado, EstadoRonda::Recaudando);
+    assert_eq!(r.minimo_fracciones, 7);
+    assert_eq!(r.bolsa, 0);
 }
 
 #[test]
-fn init_con_valores_en_cero_falla() {
-    let env = Env::default();
-    env.mock_all_auths();
-    let a = Address::generate(&env);
-    let contrato = env.register(FondeoContract, ());
-    let cliente = FondeoContractClient::new(&env, &contrato);
-    let invalido = Err(Ok(Error::ParametroInvalido));
-    assert_eq!(
-        cliente.try_init(&a, &a, &a, &a, &0, &TOTAL, &DURACION),
-        invalido
+#[should_panic]
+fn constructor_con_precio_cero_falla() {
+    registrar(&Env::default(), 0, TOTAL, DURACION, 1, PLAZO_LIBERACION);
+}
+
+#[test]
+#[should_panic]
+fn constructor_con_total_cero_falla() {
+    registrar(&Env::default(), PRECIO, 0, DURACION, 1, PLAZO_LIBERACION);
+}
+
+#[test]
+#[should_panic]
+fn constructor_con_duracion_cero_falla() {
+    registrar(&Env::default(), PRECIO, TOTAL, 0, 1, PLAZO_LIBERACION);
+}
+
+#[test]
+#[should_panic]
+fn constructor_con_minimo_mayor_que_el_total_falla() {
+    registrar(
+        &Env::default(),
+        PRECIO,
+        TOTAL,
+        DURACION,
+        TOTAL + 1,
+        PLAZO_LIBERACION,
     );
-    assert_eq!(
-        cliente.try_init(&a, &a, &a, &a, &PRECIO, &0, &DURACION),
-        invalido
-    );
-    assert_eq!(
-        cliente.try_init(&a, &a, &a, &a, &PRECIO, &TOTAL, &0),
-        invalido
+}
+
+#[test]
+#[should_panic]
+fn constructor_con_minimo_cero_falla() {
+    registrar(
+        &Env::default(),
+        PRECIO,
+        TOTAL,
+        DURACION,
+        0,
+        PLAZO_LIBERACION,
     );
 }
 
@@ -457,4 +496,215 @@ fn cerrar_sin_firma_de_la_fiduciaria_falla() {
     e.cliente.invertir(&ana, &1);
     e.env.mock_auths(&[]);
     e.cliente.cerrar();
+}
+
+// ---------- Mínimo de cierre (hallazgo H1) ----------
+
+#[test]
+fn cerrar_por_debajo_del_minimo_falla_y_se_conserva_el_reembolso() {
+    let e = preparar_con_minimo(7);
+    let ana = inversionista(&e, 10_000);
+    e.cliente.invertir(&ana, &6);
+    assert_eq!(e.cliente.try_cerrar(), Err(Ok(Error::MinimoNoAlcanzado)));
+    assert_eq!(e.cliente.try_liberar(), Err(Ok(Error::RondaNoExitosa)));
+    pasar_el_plazo(&e);
+    e.cliente.reembolsar(&ana, &6);
+    assert_eq!(e.pago.balance(&ana), 10_000);
+}
+
+#[test]
+fn cerrar_desde_el_minimo_funciona() {
+    let e = preparar_con_minimo(7);
+    let ana = inversionista(&e, 10_000);
+    e.cliente.invertir(&ana, &7);
+    e.cliente.cerrar();
+    e.cliente.liberar();
+    assert_eq!(e.pago.balance(&e.constructora), 7 * PRECIO);
+}
+
+// ---------- Plazo de liberación (hallazgo H4) ----------
+
+fn pasar_el_plazo_de_liberacion(e: &Escenario) {
+    e.env
+        .ledger()
+        .set_timestamp(e.env.ledger().timestamp() + PLAZO_LIBERACION);
+}
+
+#[test]
+fn exitosa_sin_liberar_vuelve_a_ser_reembolsable() {
+    let e = preparar();
+    let ana = llenar(&e);
+    assert_eq!(e.cliente.resumen().estado, EstadoRonda::Exitosa);
+    pasar_el_plazo_de_liberacion(&e);
+    assert_eq!(e.cliente.resumen().estado, EstadoRonda::Fallida);
+    assert_eq!(
+        e.cliente.try_liberar(),
+        Err(Ok(Error::PlazoLiberacionVencido))
+    );
+    e.cliente.reembolsar(&ana, &TOTAL);
+    assert_eq!(e.pago.balance(&ana), i128::from(TOTAL) * PRECIO);
+    assert_eq!(e.pago.balance(&e.cliente.address), 0);
+}
+
+#[test]
+fn liberar_dentro_del_plazo_funciona_y_ya_no_hay_reembolso() {
+    let e = preparar();
+    let ana = llenar(&e);
+    e.cliente.liberar();
+    pasar_el_plazo_de_liberacion(&e);
+    assert_eq!(e.cliente.resumen().estado, EstadoRonda::Liberada);
+    assert_eq!(
+        e.cliente.try_reembolsar(&ana, &1),
+        Err(Ok(Error::RondaNoFallida))
+    );
+}
+
+// ---------- Descuadre (hallazgo H2) ----------
+
+#[test]
+fn no_se_reembolsan_mas_fracciones_de_las_que_vendio_el_contrato() {
+    let e = preparar();
+    let ana = inversionista(&e, 10_000);
+    e.cliente.invertir(&ana, &4);
+    // Ana le pasa sus fracciones a Beto: él tiene 4, pero pide el reembolso de 5.
+    let beto = Address::generate(&e.env);
+    e.fracciones.transfer(&ana, &beto, &(4 * UNIDAD));
+    pasar_el_plazo(&e);
+    assert_eq!(
+        e.cliente.try_reembolsar(&beto, &5),
+        Err(Ok(Error::SaldoInsuficiente))
+    );
+    e.cliente.reembolsar(&beto, &4);
+    assert_eq!(e.cliente.resumen().vendidas, 0);
+    assert_eq!(e.pago.balance(&e.cliente.address), 0);
+}
+
+// ---------- Bolsa de liquidación y reclamo «pull» (hallazgo H6) ----------
+
+/// Ronda llena y liberada: Ana tiene 6 fracciones y Beto 4.
+fn ronda_liberada<'a>() -> (Escenario<'a>, Address, Address) {
+    let e = preparar();
+    let ana = inversionista(&e, 6 * PRECIO);
+    let beto = inversionista(&e, 4 * PRECIO);
+    e.cliente.invertir(&ana, &6);
+    e.cliente.invertir(&beto, &4);
+    e.cliente.liberar();
+    (e, ana, beto)
+}
+
+fn fondear_fiduciaria(e: &Escenario, monto: i128) {
+    StellarAssetClient::new(&e.env, &e.pago.address).mint(&e.fiduciaria, &monto);
+}
+
+#[test]
+fn depositar_y_reclamar_reparte_en_proporcion() {
+    let (e, ana, beto) = ronda_liberada();
+    fondear_fiduciaria(&e, 12_500);
+    e.cliente.depositar(&12_500);
+    assert_eq!(e.pago.balance(&e.cliente.address), 12_500);
+    assert_eq!(e.cliente.resumen().bolsa, 12_500);
+
+    assert_eq!(e.cliente.reclamar(&ana, &6), 7_500);
+    assert_eq!(e.pago.balance(&ana), 7_500);
+    assert_eq!(e.fracciones.balance(&ana), 0);
+
+    assert_eq!(e.cliente.reclamar(&beto, &4), 5_000);
+    assert_eq!(e.pago.balance(&beto), 5_000);
+
+    let r = e.cliente.resumen();
+    assert_eq!(r.bolsa, 0);
+    assert_eq!(r.en_circulacion, 0);
+    assert_eq!(e.pago.balance(&e.cliente.address), 0);
+}
+
+#[test]
+fn reclamar_por_partes_da_lo_mismo_y_el_ultimo_se_lleva_el_redondeo() {
+    let (e, ana, beto) = ronda_liberada();
+    fondear_fiduciaria(&e, 1_003);
+    e.cliente.depositar(&1_003);
+    // 1 003 entre 10 fracciones: 100 por fracción y sobran 3.
+    assert_eq!(e.cliente.reclamar(&ana, &3), 300);
+    assert_eq!(e.cliente.reclamar(&beto, &4), 401);
+    assert_eq!(e.cliente.reclamar(&ana, &3), 302);
+    assert_eq!(e.pago.balance(&e.cliente.address), 0);
+}
+
+#[test]
+fn reclama_quien_recibio_las_fracciones_por_transferencia() {
+    let (e, ana, _beto) = ronda_liberada();
+    let carla = Address::generate(&e.env);
+    e.fracciones.transfer(&ana, &carla, &(6 * UNIDAD));
+    fondear_fiduciaria(&e, 10_000);
+    e.cliente.depositar(&10_000);
+    assert_eq!(e.cliente.reclamar(&carla, &6), 6_000);
+    assert_eq!(
+        e.cliente.try_reclamar(&ana, &1),
+        Err(Ok(Error::SaldoInsuficiente))
+    );
+}
+
+#[test]
+fn depositar_antes_de_liberar_falla() {
+    let e = preparar();
+    llenar(&e);
+    fondear_fiduciaria(&e, 1_000);
+    assert_eq!(
+        e.cliente.try_depositar(&1_000),
+        Err(Ok(Error::RondaNoLiberada))
+    );
+}
+
+#[test]
+fn depositar_cero_falla() {
+    let (e, _ana, _beto) = ronda_liberada();
+    assert_eq!(
+        e.cliente.try_depositar(&0),
+        Err(Ok(Error::ParametroInvalido))
+    );
+}
+
+#[test]
+fn reclamar_antes_de_liberar_falla() {
+    let e = preparar();
+    let ana = llenar(&e);
+    assert_eq!(
+        e.cliente.try_reclamar(&ana, &1),
+        Err(Ok(Error::RondaNoLiberada))
+    );
+}
+
+#[test]
+fn reclamar_sin_dinero_en_la_bolsa_falla() {
+    let (e, ana, _beto) = ronda_liberada();
+    assert_eq!(
+        e.cliente.try_reclamar(&ana, &1),
+        Err(Ok(Error::SinGanancias))
+    );
+}
+
+#[test]
+fn reclamar_mas_fracciones_de_las_que_tiene_falla() {
+    let (e, _ana, beto) = ronda_liberada();
+    fondear_fiduciaria(&e, 1_000);
+    e.cliente.depositar(&1_000);
+    assert_eq!(
+        e.cliente.try_reclamar(&beto, &5),
+        Err(Ok(Error::SaldoInsuficiente))
+    );
+}
+
+#[test]
+#[should_panic]
+fn depositar_sin_firma_de_la_fiduciaria_falla() {
+    let (e, _ana, _beto) = ronda_liberada();
+    fondear_fiduciaria(&e, 1_000);
+    e.env.mock_auths(&[]);
+    e.cliente.depositar(&1_000);
+}
+
+#[test]
+fn mantener_lo_puede_llamar_cualquiera() {
+    let e = preparar();
+    e.env.mock_auths(&[]);
+    e.cliente.mantener();
 }
