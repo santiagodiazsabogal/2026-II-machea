@@ -32,7 +32,7 @@ export async function planDeReparto(horizon, { codigo, emisor, monto }) {
  */
 export async function enviarReparto(horizon, { desde, codigo, pagos, firmar }) {
   const cuenta = await horizon.loadAccount(desde);
-  const constructor = new TransactionBuilder(cuenta, { fee: String(Number(BASE_FEE) * pagos.length), networkPassphrase: Networks.TESTNET });
+  const constructor = new TransactionBuilder(cuenta, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET });
   for (const p of pagos) constructor.addOperation(Operation.payment({ destination: p.cuenta, asset: Asset.native(), amount: aXlm(p.parte) }));
   const tx = constructor.addMemo(Memo.text(`REPARTO ${codigo}`)).setTimeout(180).build();
   const { signedTxXdr } = await firmar(tx.toXDR(), { networkPassphrase: Networks.TESTNET, address: desde });
