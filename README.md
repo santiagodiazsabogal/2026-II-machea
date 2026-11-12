@@ -57,6 +57,34 @@ El 12 de noviembre de 2026 el proyecto tuvo una revisión técnica del Semillero
 
 Además: liberación por hitos de obra y la ruta legal (aliarse con una fiduciaria o una plataforma autorizada por la Superintendencia Financiera; la financiación colaborativa está regulada por el Decreto 1357 de 2018).
 
+## Hashes por pantalla (testnet)
+
+Cada hash se puede abrir en stellar.expert. Los del contrato de fondeo vigente son de la ronda `CEDROS`; los de `liberar` y `reembolsar` son del primer despliegue (`ALAMEDA`), porque con el contrato actual todavía no se han firmado con la wallet de la fiduciaria.
+
+| Pantalla | Qué hace el usuario | Operación | Hash |
+|---|---|---|---|
+| Proyectos | Ve el avance de las seis rondas | Lectura `resumen` del contrato | — |
+| Mi portafolio | Conecta su wallet y ve balances | Lectura de Horizon | — |
+| Invertir | Acepta el activo `CEDROS` | `changeTrust` | [`74d14b0645…`](https://stellar.expert/explorer/testnet/tx/74d14b06458916680c83773b21637e12df63672f1cb413a8917f7888a7fdfe0c) |
+| Invertir | Compra fracciones de `CEDROS` | `invertir` (contrato de fondeo vigente) | [`44c689196b…`](https://stellar.expert/explorer/testnet/tx/44c689196b701efba4940272fd18364e9fa965cd46a61c9dfbdb3ce464c000ab) |
+| Seguimiento | La fiduciaria libera los fondos a la constructora (ronda `ALAMEDA`) | `liberar` | [`82893e4e4c…`](https://stellar.expert/explorer/testnet/tx/82893e4e4c493536502755744798ea79feaf17caa90e616bc3e72784d2bf6a7e) |
+| Seguimiento | El tenedor recupera su dinero (ronda `ALAMEDB`, vencida) | `reembolsar` | [`833489baef…`](https://stellar.expert/explorer/testnet/tx/833489baef685af3e27862b19a55c87f1696f9d99afa10c4abd3755cb827730a) |
+| Seguimiento | La fiduciaria cierra la ronda antes de tiempo | `cerrar` (contrato vigente) | Pendiente: se agrega tras el ensayo con la wallet de la fiduciaria |
+
+## Declaración de uso de IA
+
+Usamos IA en todo el proyecto. Esta tabla dice dónde y qué comprobamos a mano.
+
+| Qué parte | Herramienta | Para qué | Qué verificamos a mano |
+|---|---|---|---|
+| Contrato `fondeo` (`contracts/`) | Claude (Claude Code) | Borrador del contrato, del cierre anticipado y de las pruebas | Las 31 pruebas y el CI (formato, lint, pruebas y compilación a Wasm) pasan; el ciclo de éxito y el de reembolso se probaron en testnet, con hashes en [`Docs/DISENO_FONDEO.md`](Docs/DISENO_FONDEO.md) |
+| App (`app/`) | Claude (Claude Code) | Pantallas, conexión con el contrato y con la wallet, y el portal de la fiduciaria | La app compila y se probó en el navegador con una wallet simulada; las firmas reales de cerrar, liberar y repartir con la wallet de la fiduciaria **no se han ensayado todavía** |
+| Rediseño visual | Herramienta de IA de diseño y Claude | Propuesta visual y su integración en la app | Revisión de cada pantalla en PC y celular, y que los botones sigan funcionando |
+| Modelo financiero (`Docs/MODELO_FINANCIERO.md`) | Claude | Estructura, fórmulas y búsqueda de datos de mercado | Las seis rentabilidades se recalcularon aparte; las fuentes están enlazadas; los supuestos propios están marcados como tales |
+| Documentos (`Docs/`, `DEBUG_LOG.md`) y guía de la demo (`demo/`) | Claude | Redacción y ordenamiento | El equipo los leyó y comparó con el comportamiento real del contrato y la app |
+| Revisión y auditoría | El equipo, con Claude para contrastar el código, y una revisión técnica humana del Semillero | Encontrar riesgos del contrato, el reparto y el modelo | Cada hallazgo se contrastó con el código y con la red antes de corregir textos o proponer cambios |
+| Entrevistas (`Docs/Ruta JaveBlockchain/entrevistas.md`) | Ninguna | — | Las hicieron personas del equipo; lo que no es cita textual está marcado como resumen |
+
 ## Probar la app
 
 ```bash
